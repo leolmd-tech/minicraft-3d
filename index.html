@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MiniCraft MEGA</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+  <div id="game-container"></div>
+
+  <!-- HUD Overlay -->
+  <div id="hud" class="hidden">
+    <div id="crosshair">+</div>
+
+    <!-- Status Bars -->
+    <div id="status-container">
+      <div id="health-bar" class="stat-row"></div>
+      <div id="air-bar" class="stat-row hidden"></div>
+      <div id="hunger-bar" class="stat-row"></div>
+      <div id="armor-bar" class="stat-row"></div>
+      <div id="xp-container">
+        <div id="xp-bar-fill"></div>
+        <span id="xp-level">0</span>
+      </div>
+    </div>
+
+    <!-- Hotbar -->
+    <div id="hotbar-container">
+      <div id="hotbar" class="slot-row"></div>
+      <div id="held-item-name"></div>
+    </div>
+
+    <!-- Hand / Tool Viewmodel -->
+    <div id="hand-container">
+      <canvas id="hand-canvas" width="128" height="128"></canvas>
+    </div>
+
+    <!-- Debug Info (F3) -->
+    <div id="debug-overlay" class="hidden"></div>
+  </div>
+
+  <!-- Menus & Modals -->
+  <div id="main-menu" class="overlay-screen">
+    <div class="menu-box">
+      <h1 class="logo">MINICRAFT <span>MEGA</span></h1>
+      <div class="menu-buttons">
+        <button id="btn-play-new" class="btn">Nouveau Monde</button>
+        <button id="btn-continue" class="btn disabled" disabled>Continuer Partie</button>
+        <button id="btn-options" class="btn">Options</button>
+        <button id="btn-help" class="btn">Guide & Recettes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New World Screen -->
+  <div id="new-world-menu" class="overlay-screen hidden">
+    <div class="menu-box">
+      <h2>Créer un Monde</h2>
+      <div class="form-group">
+        <label for="world-name">Nom du monde :</label>
+        <input type="text" id="world-name" value="Mon Monstre World" />
+      </div>
+      <div class="form-group">
+        <label for="world-seed">Graine (Seed) :</label>
+        <input type="text" id="world-seed" placeholder="Aléatoire si vide..." />
+      </div>
+      <div class="menu-buttons">
+        <button id="btn-start-world" class="btn">Lancer l'Aventure</button>
+        <button id="btn-back-menu" class="btn">Retour</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inventory & Crafting Screen -->
+  <div id="inventory-screen" class="overlay-screen hidden">
+    <div class="window-box inventory-window">
+      <div class="window-header">
+        <span>Inventaire & Confection</span>
+        <button class="btn-close" id="btn-close-inv">&times;</button>
+      </div>
+      <div class="inv-content">
+        <!-- Craft 2x2 / Armor / Player Preview -->
+        <div class="inv-top-section">
+          <div class="armor-slots-container">
+            <div class="slot armor-slot" data-slot-type="helmet"></div>
+            <div class="slot armor-slot" data-slot-type="chestplate"></div>
+            <div class="slot armor-slot" data-slot-type="leggings"></div>
+            <div class="slot armor-slot" data-slot-type="boots"></div>
+          </div>
+          <div class="player-preview">
+            <canvas id="player-preview-canvas" width="100" height="150"></canvas>
+          </div>
+          <div class="craft-2x2-container">
+            <h3>Crafting</h3>
+            <div class="craft-grid grid-2x2">
+              <div class="slot craft-slot" data-index="0"></div>
+              <div class="slot craft-slot" data-index="1"></div>
+              <div class="slot craft-slot" data-index="2"></div>
+              <div class="slot craft-slot" data-index="3"></div>
+            </div>
+            <div class="craft-arrow">&rarr;</div>
+            <div class="slot craft-result-slot" id="craft-2x2-result"></div>
+          </div>
+        </div>
+
+        <!-- Inventory Grid (27 main + 9 hotbar) -->
+        <div class="inv-main-grid" id="inventory-grid"></div>
+        <div class="inv-hotbar-grid" id="inventory-hotbar-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Crafting Table 3x3 Window -->
+  <div id="crafting-table-screen" class="overlay-screen hidden">
+    <div class="window-box crafting-window">
+      <div class="window-header">
+        <span>Etabli de Craft (3x3)</span>
+        <button class="btn-close" id="btn-close-craft">&times;</button>
+      </div>
+      <div class="inv-content">
+        <div class="craft-3x3-container">
+          <div class="craft-grid grid-3x3">
+            <div class="slot craft3-slot" data-index="0"></div>
+            <div class="slot craft3-slot" data-index="1"></div>
+            <div class="slot craft3-slot" data-index="2"></div>
+            <div class="slot craft3-slot" data-index="3"></div>
+            <div class="slot craft3-slot" data-index="4"></div>
+            <div class="slot craft3-slot" data-index="5"></div>
+            <div class="slot craft3-slot" data-index="6"></div>
+            <div class="slot craft3-slot" data-index="7"></div>
+            <div class="slot craft3-slot" data-index="8"></div>
+          </div>
+          <div class="craft-arrow">&rarr;</div>
+          <div class="slot craft-result-slot" id="craft-3x3-result"></div>
+        </div>
+        <div class="inv-main-grid" id="craft3-inventory-grid"></div>
+        <div class="inv-hotbar-grid" id="craft3-hotbar-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Furnace Screen -->
+  <div id="furnace-screen" class="overlay-screen hidden">
+    <div class="window-box furnace-window">
+      <div class="window-header">
+        <span>Fourneau</span>
+        <button class="btn-close" id="btn-close-furnace">&times;</button>
+      </div>
+      <div class="inv-content">
+        <div class="furnace-container">
+          <div class="furnace-slots">
+            <div class="slot furnace-input" id="furnace-input-slot"></div>
+            <div class="furnace-fire-icon" id="furnace-fire-progress">🔥</div>
+            <div class="slot furnace-fuel" id="furnace-fuel-slot"></div>
+          </div>
+          <div class="furnace-arrow-container">
+            <div class="furnace-progress-bar" id="furnace-cook-progress"></div>
+            <div class="craft-arrow">&rarr;</div>
+          </div>
+          <div class="slot furnace-output" id="furnace-output-slot"></div>
+        </div>
+        <div class="inv-main-grid" id="furnace-inventory-grid"></div>
+        <div class="inv-hotbar-grid" id="furnace-hotbar-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chest Screen -->
+  <div id="chest-screen" class="overlay-screen hidden">
+    <div class="window-box chest-window">
+      <div class="window-header">
+        <span>Coffre de Rangement</span>
+        <button class="btn-close" id="btn-close-chest">&times;</button>
+      </div>
+      <div class="inv-content">
+        <div class="chest-grid" id="chest-grid"></div>
+        <hr class="divider"/>
+        <div class="inv-main-grid" id="chest-inventory-grid"></div>
+        <div class="inv-hotbar-grid" id="chest-hotbar-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recipe Guide Screen -->
+  <div id="recipe-screen" class="overlay-screen hidden">
+    <div class="window-box recipe-window">
+      <div class="window-header">
+        <span>Guide des Recettes</span>
+        <button class="btn-close" id="btn-close-recipe">&times;</button>
+      </div>
+      <div class="recipe-list" id="recipe-list"></div>
+    </div>
+  </div>
+
+  <!-- Options Screen -->
+  <div id="options-screen" class="overlay-screen hidden">
+    <div class="window-box options-window">
+      <div class="window-header">
+        <span>Options du Jeu</span>
+        <button class="btn-close" id="btn-close-options">&times;</button>
+      </div>
+      <div class="options-content">
+        <div class="option-item">
+          <label for="opt-render-dist">Distance de rendu : <span id="val-render-dist">4</span> chunks</label>
+          <input type="range" id="opt-render-dist" min="2" max="8" value="4" />
+        </div>
+        <div class="option-item">
+          <label for="opt-fov">Champ de vision (FOV) : <span id="val-fov">75</span></label>
+          <input type="range" id="opt-fov" min="60" max="100" value="75" />
+        </div>
+        <div class="option-item">
+          <label for="opt-volume">Volume sonore : <span id="val-volume">80</span>%</label>
+          <input type="range" id="opt-volume" min="0" max="100" value="80" />
+        </div>
+        <div class="option-item">
+          <label for="opt-sensitivity">Sensibilité souris : <span id="val-sensitivity">1.0</span></label>
+          <input type="range" id="opt-sensitivity" min="0.2" max="3.0" step="0.1" value="1.0" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Controls Overlay -->
+  <div id="mobile-controls" class="hidden">
+    <div id="joystick-zone">
+      <div id="joystick-knob"></div>
+    </div>
+    <div id="mobile-buttons">
+      <button id="btn-mobile-jump" class="m-btn">SAUT</button>
+      <button id="btn-mobile-sneak" class="m-btn">SNEAK</button>
+      <button id="btn-mobile-fly" class="m-btn">VOL</button>
+      <button id="btn-mobile-mine" class="m-btn m-action">MINER</button>
+      <button id="btn-mobile-place" class="m-btn m-action">POSER</button>
+      <button id="btn-mobile-inv" class="m-btn">SAC</button>
+    </div>
+  </div>
+
+  <!-- Death Screen -->
+  <div id="death-screen" class="overlay-screen hidden">
+    <div class="menu-box red-box">
+      <h1>VOUS ÊTES MORT !</h1>
+      <p id="death-cause">Vous n'avez pas survécu.</p>
+      <button id="btn-respawn" class="btn">Réapparaître</button>
+    </div>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div id="toast-container"></div>
+
+  <!-- Game Scripts in Execution Order -->
+  <script src="js/textures.js"></script>
+  <script src="js/audio.js"></script>
+
+  <script src="js/biomes.js"></script>
+  <script src="js/structures.js"></script>
+  <script src="js/chunks.js"></script>
+
+  <script src="js/physique.js"></script>
+  <script src="js/joueur.js"></script>
+  <script src="js/controles.js"></script>
+
+  <script src="js/inventaire.js"></script>
+  <script src="js/craft.js"></script>
+  <script src="js/fours.js"></script>
+
+  <script src="js/combat.js"></script>
+  <script src="js/mobs.js"></script>
+  <script src="js/agriculture.js"></script>
+  <script src="js/meteo.js"></script>
+
+  <script src="js/sauvegarde.js"></script>
+  <script src="js/succes.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/moteur.js"></script>
+</body>
+</html>
